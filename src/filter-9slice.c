@@ -89,7 +89,7 @@ static bool filter_reload_effect(void *data)
 		info("Destroyed existing effect.");
 	}
 
-	char* effect_file = obs_module_file("sliced.hlsl");
+	char *effect_file = obs_module_file("sliced.hlsl");
 	context->effect = gs_effect_create_from_file(effect_file, NULL);
 	bfree(effect_file);
 
@@ -147,8 +147,9 @@ static void filter_render(void *data, gs_effect_t *effect)
 	context->last_source_size.x = (float)width;
 	context->last_source_size.y = (float)height;
 
-	const struct vec2 output_size = {.x = width * context->output_pixel_scale.x,
-				   .y = height * context->output_pixel_scale.y};
+	const struct vec2 output_size = {
+		.x = width * context->output_pixel_scale.x,
+		.y = height * context->output_pixel_scale.y};
 
 	if (!obs_source_process_filter_begin(context->source, GS_RGBA,
 					     OBS_ALLOW_DIRECT_RENDERING))
@@ -169,18 +170,15 @@ static void filter_update(void *data, obs_data_t *settings)
 {
 	struct filter_9slice *context = data;
 
-	const bool show_uvs =
-		obs_data_get_bool(settings, "show_uvs");
+	const bool show_uvs = obs_data_get_bool(settings, "show_uvs");
 
 	const double output_scale_x =
 		obs_data_get_double(settings, "output_scale_x");
 	const double output_scale_y =
 		obs_data_get_double(settings, "output_scale_y");
 
-	const double border_top =
-		obs_data_get_double(settings, "border_top");
-	const double border_left =
-		obs_data_get_double(settings, "border_left");
+	const double border_top = obs_data_get_double(settings, "border_top");
+	const double border_left = obs_data_get_double(settings, "border_left");
 	const double border_bottom =
 		obs_data_get_double(settings, "border_bottom");
 	const double border_right =

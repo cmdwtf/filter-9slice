@@ -5,10 +5,12 @@ cmake_minimum_required(VERSION 3.16...3.21)
 project(filter-9slice VERSION 1.0.0)
 add_library(${CMAKE_PROJECT_NAME} MODULE)
 
-# Replace `Your Name Here` with the name (yours or your organization's) you want to see as the
-# author of the plugin (in the plugin's metadata itself and in the installers)
 set(PLUGIN_AUTHOR "chris marc dailey")
 set(PLUGIN_AUTHOR_COMPANY "cmd.wtf")
+set(PLUGIN_AUTHOR_URL "https://cmd.wtf")
+string(TIMESTAMP CURRENT_DATE "%Y%m%d")
+string(TIMESTAMP CURRENT_YEAR "%Y")
+set(PROJECT_DESCRIPTION "An OBS Plugin that provides a filter to 9-slice sources.")
 
 # Replace `com.example.obs-plugin-template` with a unique Bundle ID for macOS releases (used both in
 # the installer and when submitting the installer for notarization)
@@ -19,14 +21,11 @@ set(LINUX_MAINTAINER_EMAIL "nitz@users.noreply.github.com")
 
 # Add your custom source files here - header files are optional and only required for visibility
 # e.g. in Xcode or Visual Studio
-target_sources(${CMAKE_PROJECT_NAME}
-    PRIVATE src/filter-9slice.c)
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/filter-9slice.c)
 
 # Custom non-source files so they populate in produced project.
-add_custom_target(${CMAKE_PROJECT_NAME}-resources SOURCES
-    readme.md
-    data/sliced.hlsl
-    data/locale/en-US.ini)
+add_custom_target(${CMAKE_PROJECT_NAME}-resources SOURCES readme.md data/sliced.hlsl
+                                                          data/locale/en-US.ini)
 
 # Import libobs as main plugin dependency
 find_package(libobs REQUIRED)
@@ -52,11 +51,6 @@ set_target_properties(
 configure_file(src/plugin-macros.h.in ${CMAKE_SOURCE_DIR}/src/plugin-macros.generated.h)
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-macros.generated.h)
-
-# Custom variables
-string(TIMESTAMP CURRENT_DATE "%Y%m%d")
-string(TIMESTAMP CURRENT_YEAR "%Y")
-set(PROJECT_DESCRIPTION "An OBS Plugin that provides a filter to 9-slice sources.")
 
 # /!\ TAKE NOTE: No need to edit things past this point /!\
 

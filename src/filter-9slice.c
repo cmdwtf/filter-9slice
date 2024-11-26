@@ -111,8 +111,8 @@ static bool filter_reload_effect(void *data)
 
 		params->show_uvs =
 			gs_effect_get_param_by_name(effect, "show_uvs");
-		params->use_linear_filtering =
-			gs_effect_get_param_by_name(effect, "use_linear_filtering");
+		params->use_linear_filtering = gs_effect_get_param_by_name(
+			effect, "use_linear_filtering");
 		params->border = gs_effect_get_param_by_name(effect, "border");
 		params->output_size =
 			gs_effect_get_param_by_name(effect, "output_size");
@@ -203,7 +203,8 @@ static void filter_update(void *data, obs_data_t *settings)
 	context->use_linear_filtering = use_linear_filtering;
 
 	context->output_pixel_scale.x = (float)output_scale_x;
-	context->output_pixel_scale.y = uniform_scale ? (float) output_scale_x : (float)output_scale_y;
+	context->output_pixel_scale.y = uniform_scale ? (float)output_scale_x
+						      : (float)output_scale_y;
 
 	if (uniform_scale) {
 		obs_data_set_double(settings, "output_scale_y", output_scale_x);

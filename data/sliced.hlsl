@@ -11,6 +11,7 @@ uniform bool show_uvs;
 uniform float4 border;
 uniform float2 output_size;
 uniform float2 source_size;
+uniform bool use_linear_filtering;
 uniform bool debug;
 
 // General constants
@@ -18,11 +19,20 @@ uniform bool debug;
 #define UVHigh 1.0
 
 // Interpolation method and wrap mode for sampling a texture
+SamplerState point_clamp
+{
+	Filter = Point;        // Anisotropy / Point / Linear
+	AddressU = Clamp;       // Wrap / Clamp / Mirror / border / MirrorOnce
+	AddressV = Clamp;       // Wrap / Clamp / Mirror / border / MirrorOnce
+	borderColor = 00000000; // Used only with border edges (optional)
+};
+
+// Interpolation method and wrap mode for sampling a texture
 SamplerState linear_clamp
 {
-	Filter    = Linear;     // Anisotropy / Point / Linear
-	AddressU  = Clamp;      // Wrap / Clamp / Mirror / border / MirrorOnce
-	AddressV  = Clamp;      // Wrap / Clamp / Mirror / border / MirrorOnce
+	Filter = Linear;         // Anisotropy / Point / Linear
+	AddressU = Clamp;       // Wrap / Clamp / Mirror / border / MirrorOnce
+	AddressV = Clamp;       // Wrap / Clamp / Mirror / border / MirrorOnce
 	borderColor = 00000000; // Used only with border edges (optional)
 };
 
@@ -93,12 +103,14 @@ float4 PS9Slice(pixel_data pixel) : TARGET
 	);
 
 	// sample the texture or show UVs
-	float3 color = show_uvs
-		? float3(uv, 0.0)
-		: image.Sample(linear_clamp, uv);
+	float4 color = show_uvs
+		? float4(uv, 0.0, 1.0)
+		: use_linear_filtering
+			? image.Sample(linear_clamp, uv)
+			: image.Sample(point_clamp, uv);
 
 	// and return the color
-	return float4(color, 1.0);
+	return color;
 }
 
 technique Draw

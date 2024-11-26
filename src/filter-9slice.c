@@ -45,11 +45,14 @@ struct filter_9slice {
 	struct vec2 output_pixel_scale;
 	struct vec2 last_source_size;
 	bool show_uvs;
+	bool uniform_scale;
+	bool use_linear_filtering;
 	struct filter_9slice_params_t {
 		gs_eparam_t *border;
 		gs_eparam_t *output_size;
 		gs_eparam_t *source_size;
 		gs_eparam_t *show_uvs;
+		gs_eparam_t *use_linear_filtering;
 	} params;
 };
 
@@ -97,6 +100,7 @@ static bool filter_reload_effect(void *data)
 	params->border = NULL;
 	params->output_size = NULL;
 	params->source_size = NULL;
+	params->use_linear_filtering = NULL;
 	params->show_uvs = NULL;
 
 	if (!context->effect) {
@@ -107,12 +111,17 @@ static bool filter_reload_effect(void *data)
 
 		params->show_uvs =
 			gs_effect_get_param_by_name(effect, "show_uvs");
+		params->use_linear_filtering =
+			gs_effect_get_param_by_name(effect, "use_linear_filtering");
 		params->border = gs_effect_get_param_by_name(effect, "border");
 		params->output_size =
 			gs_effect_get_param_by_name(effect, "output_size");
 		params->source_size =
 			gs_effect_get_param_by_name(effect, "source_size");
 
+		if (params->use_linear_filtering == NULL) {
+			warn("Failed to get use_linear_filtering param.");
+		}
 		if (params->show_uvs == NULL) {
 			warn("Failed to get show_uvs param.");
 		}
@@ -161,6 +170,8 @@ static void filter_render(void *data, gs_effect_t *effect)
 	gs_effect_set_vec2(params->source_size, &context->last_source_size);
 	gs_effect_set_vec2(params->output_size, &output_size);
 	gs_effect_set_bool(params->show_uvs, context->show_uvs);
+	gs_effect_set_bool(params->use_linear_filtering,
+			   context->use_linear_filtering);
 
 	obs_source_process_filter_end(context->source, context->effect, width,
 				      height);
@@ -171,6 +182,9 @@ static void filter_update(void *data, obs_data_t *settings)
 	struct filter_9slice *context = data;
 
 	const bool show_uvs = obs_data_get_bool(settings, "show_uvs");
+	const bool uniform_scale = obs_data_get_bool(settings, "uniform_scale");
+	const bool use_linear_filtering =
+		obs_data_get_bool(settings, "use_linear_filtering");
 
 	const double output_scale_x =
 		obs_data_get_double(settings, "output_scale_x");
@@ -185,9 +199,15 @@ static void filter_update(void *data, obs_data_t *settings)
 		obs_data_get_double(settings, "border_right");
 
 	context->show_uvs = show_uvs;
+	context->uniform_scale = uniform_scale;
+	context->use_linear_filtering = use_linear_filtering;
 
 	context->output_pixel_scale.x = (float)output_scale_x;
-	context->output_pixel_scale.y = (float)output_scale_y;
+	context->output_pixel_scale.y = uniform_scale ? (float) output_scale_x : (float)output_scale_y;
+
+	if (uniform_scale) {
+		obs_data_set_double(settings, "output_scale_y", output_scale_x);
+	}
 
 	context->border.x = (float)border_top;
 	context->border.y = (float)border_left;
@@ -221,6 +241,8 @@ static void filter_get_defaults(obs_data_t *settings)
 	const double BorderDefault = 8.0;
 
 	obs_data_set_default_bool(settings, "show_uvs", false);
+	obs_data_set_default_bool(settings, "uniform_scale", true);
+	obs_data_set_default_bool(settings, "use_linear_filtering", false);
 
 	obs_data_set_default_double(settings, "output_scale_x", ScaleDefault);
 	obs_data_set_default_double(settings, "output_scale_y", ScaleDefault);
@@ -246,17 +268,19 @@ static obs_properties_t *filter_get_properties(void *data)
 
 	// limit the border sizes to half of the source size
 	const double SliceWidthMax =
-		context == NULL
-			? ScaleMin
-			: floor((context->last_source_size.x / 2.0) - 0.5);
+		context == NULL ? ScaleMin : context->last_source_size.x - 1.0;
 	const double SliceHeightMax =
-		context == NULL
-			? ScaleMin
-			: floor((context->last_source_size.y / 2.0) - 0.5);
+		context == NULL ? ScaleMin : context->last_source_size.y - 1.0;
 
 	// debug options
 	obs_properties_add_bool(props, "show_uvs",
 				obs_module_text("NineSlice.ShowUVs"));
+
+	obs_properties_add_bool(props, "uniform_scale",
+				obs_module_text("NineSlice.UniformScale"));
+
+	obs_properties_add_bool(props, "use_linear_filtering",
+				obs_module_text("NineSlice.LinearFiltering"));
 
 	// output scale x/y
 	obs_properties_add_float_slider(props, "output_scale_x",
@@ -264,7 +288,7 @@ static obs_properties_t *filter_get_properties(void *data)
 					ScaleMin, ScaleMax, ScaleStep);
 
 	obs_properties_add_float_slider(props, "output_scale_y",
-					obs_module_text("NineSlice.Scaley"),
+					obs_module_text("NineSlice.ScaleY"),
 					ScaleMin, ScaleMax, ScaleStep);
 
 	// border sizes

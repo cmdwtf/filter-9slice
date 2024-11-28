@@ -27,7 +27,6 @@ struct filter_9slice {
 	obs_source_t *source;
 	gs_effect_t *effect;
 	struct vec4 border;
-	struct vec2 last_source_size;
 	bool show_uvs;
 	bool use_linear_filtering;
 	struct filter_9slice_params_t {
@@ -147,7 +146,18 @@ static bool enum_scenes_callback(void *data_ptr, obs_source_t *scene_source)
 
 	// found the scene-item that contain our source!
 	data->found = found;
+
 	return false;
+}
+
+static obs_sceneitem_t *find_sceneitem(obs_source_t *parent)
+{
+	cb_data_t target = {
+		.parent = parent,
+		.found = NULL,
+	};
+	obs_enum_scenes(enum_scenes_callback, &target);
+	return target.found;
 }
 
 static void filter_render(void *data, gs_effect_t *effect)
@@ -160,23 +170,20 @@ static void filter_render(void *data, gs_effect_t *effect)
 	}
 
 	obs_source_t *parent = obs_filter_get_parent(context->source);
-
-	struct cb_data target = {
-		.parent = parent,
-		.found = NULL,
-	};
-	obs_enum_scenes(enum_scenes_callback, &target);
+	obs_sceneitem_t *found = find_sceneitem(parent);
 
 	struct vec2 scale = {.x = 1.0f, .y = 1.0f};
-	if (target.found) {
-		obs_sceneitem_get_scale(target.found, &scale);
+	if (found) {
+		obs_sceneitem_get_scale(found, &scale);
 	}
 
 	const uint32_t width = obs_source_get_width(parent);
 	const uint32_t height = obs_source_get_height(parent);
 
-	context->last_source_size.x = (float)width;
-	context->last_source_size.y = (float)height;
+	const struct vec2 source_size = {
+		.x = (float)width,
+		.y = (float)height,
+	};
 
 	const struct vec2 output_size = {
 		.x = width * scale.x,
@@ -190,7 +197,7 @@ static void filter_render(void *data, gs_effect_t *effect)
 	struct filter_9slice_params_t *params = &context->params;
 
 	gs_effect_set_vec4(params->border, &context->border);
-	gs_effect_set_vec2(params->source_size, &context->last_source_size);
+	gs_effect_set_vec2(params->source_size, &source_size);
 	gs_effect_set_vec2(params->output_size, &output_size);
 	gs_effect_set_bool(params->show_uvs, context->show_uvs);
 	gs_effect_set_bool(params->use_linear_filtering,
@@ -265,14 +272,19 @@ static obs_properties_t *filter_get_properties(void *data)
 	const double SliceMin = 0.0;
 	const double SliceStep = 1.0;
 
-	struct filter_9slice *context = data;
-	obs_properties_t *props = obs_properties_create();
-
 	// limit the border sizes to half of the source size
-	const double SliceWidthMax =
-		context == NULL ? ScaleMin : context->last_source_size.x - 1.0;
-	const double SliceHeightMax =
-		context == NULL ? ScaleMin : context->last_source_size.y - 1.0;
+	double SliceWidthMax = ScaleMin;
+	double SliceHeightMax = ScaleMin;
+
+	struct filter_9slice *context = data;
+
+	if (context != NULL) {
+		obs_source_t *parent = obs_filter_get_parent(context->source);
+		SliceWidthMax = obs_source_get_width(parent) - 1.0;
+		SliceHeightMax = obs_source_get_height(parent) - 1.0;
+	}
+
+	obs_properties_t *props = obs_properties_create();
 
 	// debug options
 	obs_properties_add_bool(props, "show_uvs",

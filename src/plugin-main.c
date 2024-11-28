@@ -75,7 +75,7 @@ static bool filter_reload_effect(void *data)
 		obs_log(LOG_INFO, "Destroyed existing effect.");
 	}
 
-	char *effect_file = obs_module_file("sliced.hlsl");
+	char *effect_file = obs_module_file("sliced.effect");
 	context->effect = gs_effect_create_from_file(effect_file, NULL);
 	bfree(effect_file);
 
@@ -172,11 +172,11 @@ static void filter_render(void *data, gs_effect_t *effect)
 		obs_sceneitem_get_scale(target.found, &scale);
 	}
 
-	const float width = obs_source_get_width(parent);
-	const float height = obs_source_get_height(parent);
+	const uint32_t width = obs_source_get_width(parent);
+	const uint32_t height = obs_source_get_height(parent);
 
-	context->last_source_size.x = width;
-	context->last_source_size.y = height;
+	context->last_source_size.x = (float)width;
+	context->last_source_size.y = (float)height;
 
 	const struct vec2 output_size = {
 		.x = width * scale.x,

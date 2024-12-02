@@ -1,6 +1,7 @@
 /*
-Plugin Name
-Copyright (C) <Year> <Developer> <Email Address>
+filter-9slice
+Copyright (C) 2023-2024 nitz - chris marc dailey https://cmd.wtf
+Copyright (C) 2024 yuniruyuni https://github.com/yuniruyuni
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
